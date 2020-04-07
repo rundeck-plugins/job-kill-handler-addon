@@ -2,7 +2,7 @@
 
 ## Basic Usage
 
-This add-on allows to track the PIDs of processes executed on a remote node, and the issue a kill command for those PIDs when the job finish.
+This add-on allows to track the PIDs of processes executed on a remote node, and then issue a kill command for those PIDs when the job finish.
 
 To enable, install the add-on and setup the `Capture Process IDs` log filter on your job. This filter will register any PID written to the execution output log according to the configured pattern.
 
@@ -37,9 +37,6 @@ To build the plugin, run the gradle build command:
 The resulting artifact will be found at `build/libs/job-kill-handler-VERSION.jar`
 
 For installing, copy the jar artifact to $RDBASE/server/addons directory. After restarting rundeck you should see the plugins available.
-
-
-
 
 
 
