@@ -33,7 +33,7 @@ This operation will only affect nodes with 'unix' as osFamily, and will use the 
 
     @PluginProperty(
             title = "Kill Children",
-            description = "Also kill processes whose parent PID (PPID) matches the tracked PIDs"
+            description = "Also kill processes whose process SID matches the tracked PIDs"
     )
     boolean killChilds = true
 
@@ -88,7 +88,7 @@ This operation will only affect nodes with 'unix' as osFamily, and will use the 
                                         ExecArgList.fromStrings(false, cmdKillSid),
                                         node)
 
-//                                // Issue kill by parent id. This works when the parent process is still alive.
+//                                // Issue kill by parent id. This works only when the parent process is still alive.
 //                                def cmdKillPpid = "pkill -SIGKILL -P " + commaPidList
 //                                nodeExecutionService.executeCommand(execContext,
 //                                        ExecArgList.fromStrings(false, cmdKillPpid),
