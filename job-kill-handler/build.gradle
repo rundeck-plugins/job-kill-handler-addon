@@ -1,0 +1,154 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        maven { url "https://repo.grails.org/grails/core" }
+    }
+    dependencies {
+        classpath "org.grails:grails-gradle-plugin:$grailsVersion"
+        classpath "com.bertramlabs.plugins:asset-pipeline-gradle:$assetPluginVersion"
+    }
+}
+
+apply plugin:"eclipse"
+apply plugin:"idea"
+apply plugin:"org.grails.grails-plugin"
+apply plugin:"asset-pipeline"
+apply plugin:"org.grails.grails-gsp"
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url "https://repo.grails.org/grails/core" }
+}
+configurations{
+    //define libs needed to be bundled into the WEB-INF/lib dir of the war
+    exportedLibs
+    spa
+    developmentOnly
+    runtimeClasspath {
+        extendsFrom developmentOnly
+    }
+}
+
+
+dependencies {
+    if (findProject(":core")) {
+        compile project(":core")
+    } else {
+        compile "org.rundeck:rundeck-core:${project.rundeckVersion}"
+    }
+
+    compile "org.springframework.boot:spring-boot-starter-logging"
+    compile "org.springframework.boot:spring-boot-autoconfigure"
+    compile "org.grails:grails-core"
+    compile "org.springframework.boot:spring-boot-starter-actuator"
+    compile "org.grails:grails-web-boot"
+    compile "org.grails:grails-logging"
+    compile "org.grails:grails-plugin-rest"
+    compile "org.grails:grails-plugin-databinding"
+    compile "org.grails:grails-plugin-i18n"
+    compile "org.grails:grails-plugin-services"
+    compile "org.grails:grails-plugin-url-mappings"
+    compile "org.grails:grails-plugin-interceptors"
+    compile "org.grails.plugins:cache"
+    compile "org.grails.plugins:async"
+    compile "org.grails.plugins:scaffolding"
+    compile "org.grails.plugins:gsp"
+    compile "org.grails.plugins:hibernate5"
+    compileOnly "io.micronaut:micronaut-inject-groovy"
+    console "org.grails:grails-console"
+    profile "org.grails.profiles:web-plugin"
+    provided "org.grails:grails-plugin-services"
+    provided "org.grails:grails-plugin-domain-class"
+    provided "com.bertramlabs.plugins:asset-pipeline-grails:$assetPluginVersion"
+    testCompile "org.grails:grails-gorm-testing-support"
+    testCompile "org.mockito:mockito-core"
+    testCompile "org.grails:grails-web-testing-support"
+}
+
+publishing{
+    publications {
+        addonLib(MavenPublication) {
+            from components.java
+            version = project.version
+            pom {
+                name = "Rundeck Addon: ${project.name}".toString()
+                description = "Rundeck Addon - ${project.name}".toString()
+                url = 'https://github.com/rundeck-plugins/job-kill-handler-addon'
+
+                developers {
+                    developer {
+                        id = 'ahormazabal'
+                        name = 'Alberto Hormazabal'
+                        email = 'alberto@rundeck.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/rundeck-plugins/job-kill-handler-addon.git'
+                    developerConnection = 'scm:git:ssh://github.com/rundeck-plugins/job-kill-handler-addon.git'
+                    url = 'https://github.com/rundeck-plugins/job-kill-handler-addon'
+                }
+            }
+        }
+    }
+}
+//
+//bintray {
+//    user = findProperty("bintrayUser")
+//    key = System.getenv("BINTRAY_TOKEN")
+//
+//    dryRun = (findProperty('dryRun') ?: 'true').toBoolean()
+//    delegate.publish = true
+//    publications = ["addonLib"]
+//    pkg {
+//        repo = findProperty('bintrayRepo')
+//        name = 'job-kill-handler-addon'
+//        userOrg = findProperty('bintrayOrg')
+//
+//        githubRepo = 'rundeck-plugins/job-kill-handler-addon' //Optional Github repository
+//        vcsUrl = 'https://github.com/rundeck-plugins/job-kill-handler-addon.git'
+//
+//        version {
+//            name = project.version
+//
+//            gpg {
+//                sign = true //Determines whether to GPG sign the files. The default is false
+//                passphrase = System.getenv('SIGNING_PASSWORD')
+//            }
+//        }
+//    }
+//}
+
+bootRun {
+    ignoreExitValue true
+    jvmArgs(
+        '-Dspring.output.ansi.enabled=always',
+        '-noverify',
+        '-XX:TieredStopAtLevel=1',
+        '-Xmx1024m')
+    sourceResources sourceSets.main
+    String springProfilesActive = 'spring.profiles.active'
+    systemProperty springProfilesActive, System.getProperty(springProfilesActive)
+}
+
+tasks.withType(GroovyCompile) {
+    configure(groovyOptions) {
+        forkOptions.jvmArgs = ['-Xmx1024m']
+    }
+}
+
+// enable if you wish to package this plugin as a standalone application
+bootJar.enabled = false
+
+assets {
+    minifyJs = false
+    minifyCss = false
+    verbose = true
+    packagePlugin = project.findProperty('packagePlugin')?: false
+    configOptions = [:]
+
+    includes = ['**/*.js', '**/*.css', '**/*.png', '**/*.svg']
+}
+
