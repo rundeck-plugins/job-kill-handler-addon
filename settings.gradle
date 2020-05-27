@@ -1,1 +1,1 @@
-include ':job-kill-handler'
+include ':rundeck-job-kill-handler'
