@@ -94,32 +94,6 @@ publishing{
         }
     }
 }
-//
-//bintray {
-//    user = findProperty("bintrayUser")
-//    key = System.getenv("BINTRAY_TOKEN")
-//
-//    dryRun = (findProperty('dryRun') ?: 'true').toBoolean()
-//    delegate.publish = true
-//    publications = ["addonLib"]
-//    pkg {
-//        repo = findProperty('bintrayRepo')
-//        name = 'job-kill-handler-addon'
-//        userOrg = findProperty('bintrayOrg')
-//
-//        githubRepo = 'rundeck-plugins/job-kill-handler-addon' //Optional Github repository
-//        vcsUrl = 'https://github.com/rundeck-plugins/job-kill-handler-addon.git'
-//
-//        version {
-//            name = project.version
-//
-//            gpg {
-//                sign = true //Determines whether to GPG sign the files. The default is false
-//                passphrase = System.getenv('SIGNING_PASSWORD')
-//            }
-//        }
-//    }
-//}
 
 bootRun {
     ignoreExitValue true
