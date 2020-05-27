@@ -1,0 +1,1 @@
+include ':rundeck-job-kill-handler'
