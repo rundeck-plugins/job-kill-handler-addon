@@ -27,6 +27,7 @@ This operation will only affect nodes with 'unix' as osFamily, and will use the 
 '''
 
     private static final String OSFAMILY_UNIX = "unix"
+    private static final String OSFAMILY_WINDOWS = "windows"
 
     AuthorizedServicesProvider rundeckAuthorizedServicesProvider
     KillHandlerProcessTrackingService processTrackingService
@@ -64,29 +65,28 @@ This operation will only affect nodes with 'unix' as osFamily, and will use the 
 
                     def nodePidData = executionTrackData.get(node.nodename)
                     if (nodePidData && nodePidData.pids) {
+                        def commaPidList = nodePidData.pids.join(",")
+                        event.executionLogger.log(Constants.DEBUG_LEVEL, "Killing tracked processes on node '${node.nodename}': ${commaPidList}")
+                        String cmdKill = "kill -9 " + nodePidData.pids.join(" ")
 
-                        // For now we only process unix nodes.
-                        if (OSFAMILY_UNIX.equalsIgnoreCase(node.osFamily)) {
+                        if (OSFAMILY_WINDOWS.equalsIgnoreCase(node.osFamily)) {
+                            cmdKill = "taskkill /PID " + nodePidData.pids.join(" ") + " /F"
+                        }
 
-                            def commaPidList = nodePidData.pids.join(",")
-                            event.executionLogger.log(Constants.DEBUG_LEVEL, "Killing tracked processes on node '${node.nodename}': ${commaPidList}")
+                        nodeExecutionService.executeCommand(execContext,
+                                ExecArgList.fromStrings(false, false, cmdKill),
+                                node)
 
-                            // Issue PID kill
-                            def cmdKill = "kill -9 " + nodePidData.pids.join(" ")
+                        // Kill children processes
+                        if (killChilds) {
+                            event.executionLogger.log(Constants.DEBUG_LEVEL, "Killing processes by parent on node '${node.nodename}': ${commaPidList}")
+                            // When the parent pid is killed, children processes change its ppid to 1 (init pid)
+                            // To circumvent this, we issue a kill by SID also.
+                            // This command will not work on macOS version of pkill :(
+                            def cmdKillSid = "pkill -SIGKILL -s " + commaPidList
                             nodeExecutionService.executeCommand(execContext,
-                                    ExecArgList.fromStrings(false, cmdKill),
+                                    ExecArgList.fromStrings(false, false, cmdKillSid),
                                     node)
-
-                            // Kill children processes
-                            if (killChilds) {
-                                event.executionLogger.log(Constants.DEBUG_LEVEL, "Killing processes by parent on node '${node.nodename}': ${commaPidList}")
-                                // When the parent pid is killed, children processes change its ppid to 1 (init pid)
-                                // To circumvent this, we issue a kill by SID also.
-                                // This command will not work on macOS version of pkill :(
-                                def cmdKillSid = "pkill -SIGKILL -s " + commaPidList
-                                nodeExecutionService.executeCommand(execContext,
-                                        ExecArgList.fromStrings(false, cmdKillSid),
-                                        node)
 
 //                                // Issue kill by parent id. This works only when the parent process is still alive.
 //                                def cmdKillPpid = "pkill -SIGKILL -P " + commaPidList
@@ -94,7 +94,6 @@ This operation will only affect nodes with 'unix' as osFamily, and will use the 
 //                                        ExecArgList.fromStrings(false, cmdKillPpid),
 //                                        node)
 
-                            }
                         }
                     }
                 }
