@@ -3,6 +3,7 @@ package com.rundeck.plugins.killhandler
 import com.dtolabs.rundeck.core.Constants
 import com.dtolabs.rundeck.core.execution.ExecArgList
 import com.dtolabs.rundeck.core.execution.NodeExecutionService
+import com.dtolabs.rundeck.core.execution.service.NodeExecutorResult
 import com.dtolabs.rundeck.core.jobs.ExecutionLifecycleStatus
 import com.dtolabs.rundeck.core.jobs.JobExecutionEvent
 import com.dtolabs.rundeck.core.plugins.Plugin
@@ -19,14 +20,12 @@ import org.slf4j.LoggerFactory
 @PluginDescription(title = KillHandlerExecutionLifecyclePlugin.PLUGIN_TITLE, description = KillHandlerExecutionLifecyclePlugin.PLUGIN_DESC)
 @CompileStatic
 class KillHandlerExecutionLifecyclePlugin implements ExecutionLifecyclePlugin {
-    private final Logger log = LoggerFactory.getLogger(KillHandlerExecutionLifecyclePlugin.name)
     static final String PROVIDER_NAME = 'killhandler'
     static final String PLUGIN_TITLE = "Kill tracked processes after execution"
     static final String PLUGIN_DESC = '''Kill all processes collected by the 'Capture Process IDs' log filter\n\n
 This operation will only affect nodes with 'unix' as osFamily, and will use the 'kill' and 'pkill' commands which must be available at the node.
 '''
 
-    private static final String OSFAMILY_UNIX = "unix"
     private static final String OSFAMILY_WINDOWS = "windows"
 
     AuthorizedServicesProvider rundeckAuthorizedServicesProvider
@@ -73,9 +72,12 @@ This operation will only affect nodes with 'unix' as osFamily, and will use the 
                             cmdKill = "taskkill /PID " + nodePidData.pids.join(" ") + " /F"
                         }
 
-                        nodeExecutionService.executeCommand(execContext,
+
+                        NodeExecutorResult result = nodeExecutionService.executeCommand(execContext,
                                 ExecArgList.fromStrings(false, false, cmdKill),
                                 node)
+
+                        event.executionLogger.log(Constants.DEBUG_LEVEL, "Result from killing processes attempt: "+ result)
 
                         // Kill children processes
                         if (killChilds) {
@@ -97,6 +99,8 @@ This operation will only affect nodes with 'unix' as osFamily, and will use the 
                         }
                     }
                 }
+            } else {
+                event.executionLogger.log(Constants.WARN_LEVEL, 'No process ID captured, skipping...')
             }
         }
         return null
