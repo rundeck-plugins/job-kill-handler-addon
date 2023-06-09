@@ -7,12 +7,14 @@ This add-on allows to track the PIDs of processes executed on a remote node, and
 
 2. Setup the `Capture Process IDs` log filter on your job. This filter will register any PID written to the execution output log according to the configured pattern.
 
+![image](https://github.com/rundeck-plugins/job-kill-handler-addon/assets/49494423/f303b5d2-4811-447a-8fa7-24a972623d81)
+
 For example, using the default configuration, you can print this string to the output log and the log filter will capture the value `2345`:
-```
-RUNDECK:PID:2345
-```
+![image](https://github.com/rundeck-plugins/job-kill-handler-addon/assets/49494423/51f128be-2588-41bb-b7a8-374ca3f5db66)
 
 3. Enable the `Kill tracked processes after execution` execution plugin. The default behavior is to kill any processes on the corresponding nodes with PIDs captured by the log filter after the job finishes for any reason, you can also make it kill children processes and/or only killing processes on job failure (job finishes with `FAIL` status or is killed).
+
+![image](https://github.com/rundeck-plugins/job-kill-handler-addon/assets/49494423/8d608c9d-ae27-49f2-b7c9-c0aa42258a4a)
 
 
 ## Operating System Support
