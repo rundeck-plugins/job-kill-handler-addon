@@ -3,7 +3,7 @@ This add-on allows to track the PIDs of processes executed on a remote node, and
 
 ## Basic Usage
 
-1. To install the add-on copy the `rundeck-job-kill-handler-<version>.jar` file into the `$RDBASE/server/addons` directory.
+1. To install the add-on copy the `rundeck-job-kill-handler-<version>.jar` file into the `$RDECK_BASE/server/addons` directory (`/var/lib/addons` in rpm).
 
 2. Setup the `Capture Process IDs` log filter on your job. This filter will register any PID written to the execution output log according to the configured pattern.
 
@@ -17,7 +17,9 @@ For example, using the default configuration, you can print this string to the o
 ![image](https://github.com/rundeck-plugins/job-kill-handler-addon/assets/49494423/8d608c9d-ae27-49f2-b7c9-c0aa42258a4a)
 
 
-## Operating System Support
+## Support
+
+Process Automation Version: 4.13 or higher.
 
 Currently this plugin has been successfully tested on the following target node operating systems:
 - Ubuntu 18.04
