@@ -80,7 +80,7 @@ This operation will only affect nodes with 'unix' as osFamily, and will use the 
                         event.executionLogger.log(Constants.DEBUG_LEVEL, "Result from killing processes attempt: "+ result)
 
                         // Kill children processes
-                        if (killChilds) {
+                        if (killChilds && !OSFAMILY_WINDOWS.equalsIgnoreCase(node.osFamily)) {
                             event.executionLogger.log(Constants.DEBUG_LEVEL, "Killing processes by parent on node '${node.nodename}': ${commaPidList}")
                             // When the parent pid is killed, children processes change its ppid to 1 (init pid)
                             // To circumvent this, we issue a kill by SID also.
