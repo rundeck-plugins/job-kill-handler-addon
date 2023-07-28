@@ -37,7 +37,8 @@ class KillHandlerProcessTrackingService {
      * @return
      */
     Map<String, NodePidList> getExecutionTrackData(String executionId) {
-        return Collections.unmodifiableMap(executionTrackMap.get(executionId))
+        ConcurrentHashMap<String, NodePidList> execPIDsMap = executionTrackMap.get(executionId)
+        return execPIDsMap ? Collections.unmodifiableMap(execPIDsMap) : null
     }
 
     /**

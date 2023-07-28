@@ -3,6 +3,7 @@ package com.rundeck.plugins.killhandler
 import com.dtolabs.rundeck.core.Constants
 import com.dtolabs.rundeck.core.execution.ExecArgList
 import com.dtolabs.rundeck.core.execution.NodeExecutionService
+import com.dtolabs.rundeck.core.execution.service.NodeExecutorResult
 import com.dtolabs.rundeck.core.jobs.ExecutionLifecycleStatus
 import com.dtolabs.rundeck.core.jobs.JobExecutionEvent
 import com.dtolabs.rundeck.core.plugins.Plugin
@@ -19,14 +20,13 @@ import org.slf4j.LoggerFactory
 @PluginDescription(title = KillHandlerExecutionLifecyclePlugin.PLUGIN_TITLE, description = KillHandlerExecutionLifecyclePlugin.PLUGIN_DESC)
 @CompileStatic
 class KillHandlerExecutionLifecyclePlugin implements ExecutionLifecyclePlugin {
-    private final Logger log = LoggerFactory.getLogger(KillHandlerExecutionLifecyclePlugin.name)
     static final String PROVIDER_NAME = 'killhandler'
     static final String PLUGIN_TITLE = "Kill tracked processes after execution"
     static final String PLUGIN_DESC = '''Kill all processes collected by the 'Capture Process IDs' log filter\n\n
 This operation will only affect nodes with 'unix' as osFamily, and will use the 'kill' and 'pkill' commands which must be available at the node.
 '''
 
-    private static final String OSFAMILY_UNIX = "unix"
+    private static final String OSFAMILY_WINDOWS = "windows"
 
     AuthorizedServicesProvider rundeckAuthorizedServicesProvider
     KillHandlerProcessTrackingService processTrackingService
@@ -64,29 +64,31 @@ This operation will only affect nodes with 'unix' as osFamily, and will use the 
 
                     def nodePidData = executionTrackData.get(node.nodename)
                     if (nodePidData && nodePidData.pids) {
+                        def commaPidList = nodePidData.pids.join(",")
+                        event.executionLogger.log(Constants.DEBUG_LEVEL, "Killing tracked processes on node '${node.nodename}': ${commaPidList}")
+                        String cmdKill = "kill -9 " + nodePidData.pids.join(" ")
 
-                        // For now we only process unix nodes.
-                        if (OSFAMILY_UNIX.equalsIgnoreCase(node.osFamily)) {
+                        if (OSFAMILY_WINDOWS.equalsIgnoreCase(node.osFamily)) {
+                            cmdKill = "taskkill /PID " + nodePidData.pids.join(" ") + " /F"
+                        }
 
-                            def commaPidList = nodePidData.pids.join(",")
-                            event.executionLogger.log(Constants.DEBUG_LEVEL, "Killing tracked processes on node '${node.nodename}': ${commaPidList}")
 
-                            // Issue PID kill
-                            def cmdKill = "kill -9 " + nodePidData.pids.join(" ")
+                        NodeExecutorResult result = nodeExecutionService.executeCommand(execContext,
+                                ExecArgList.fromStrings(false, false, cmdKill),
+                                node)
+
+                        event.executionLogger.log(Constants.DEBUG_LEVEL, "Result from killing processes attempt: "+ result)
+
+                        // Kill children processes
+                        if (killChilds && !OSFAMILY_WINDOWS.equalsIgnoreCase(node.osFamily)) {
+                            event.executionLogger.log(Constants.DEBUG_LEVEL, "Killing processes by parent on node '${node.nodename}': ${commaPidList}")
+                            // When the parent pid is killed, children processes change its ppid to 1 (init pid)
+                            // To circumvent this, we issue a kill by SID also.
+                            // This command will not work on macOS version of pkill :(
+                            def cmdKillSid = "pkill -SIGKILL -s " + commaPidList
                             nodeExecutionService.executeCommand(execContext,
-                                    ExecArgList.fromStrings(false, cmdKill),
+                                    ExecArgList.fromStrings(false, false, cmdKillSid),
                                     node)
-
-                            // Kill children processes
-                            if (killChilds) {
-                                event.executionLogger.log(Constants.DEBUG_LEVEL, "Killing processes by parent on node '${node.nodename}': ${commaPidList}")
-                                // When the parent pid is killed, children processes change its ppid to 1 (init pid)
-                                // To circumvent this, we issue a kill by SID also.
-                                // This command will not work on macOS version of pkill :(
-                                def cmdKillSid = "pkill -SIGKILL -s " + commaPidList
-                                nodeExecutionService.executeCommand(execContext,
-                                        ExecArgList.fromStrings(false, cmdKillSid),
-                                        node)
 
 //                                // Issue kill by parent id. This works only when the parent process is still alive.
 //                                def cmdKillPpid = "pkill -SIGKILL -P " + commaPidList
@@ -94,10 +96,11 @@ This operation will only affect nodes with 'unix' as osFamily, and will use the 
 //                                        ExecArgList.fromStrings(false, cmdKillPpid),
 //                                        node)
 
-                            }
                         }
                     }
                 }
+            } else {
+                event.executionLogger.log(Constants.WARN_LEVEL, 'No process ID captured, skipping...')
             }
         }
         return null
