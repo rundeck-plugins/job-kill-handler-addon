@@ -1,3 +1,5 @@
+# This is deprecated and is part of the Rundeck codebase; use the bundled one.
+
 # Rundeck Kill Handler Add-On
 This add-on allows to track the PIDs of processes executed on a remote node, and then issue a kill command for those PIDs when the job finish. The feature must be configured on each job where it's needed.
 
